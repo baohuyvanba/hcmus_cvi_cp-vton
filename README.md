@@ -1,8 +1,7 @@
 # Toward Characteristic-Preserving Image-based Virtual Try-On Network
 
 
-## Citation
-If this code helps your research, please cite our paper:
+## References
 
 	@inproceedings{wang2018toward,
 		title={Toward Characteristic-Preserving Image-based Virtual Try-On Network},
