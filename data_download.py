@@ -6,7 +6,6 @@ import re
 import tarfile
 import shutil
 
-
 def download(url, filename, cookies=None):
     with open(filename, 'wb') as f:
         response = requests.get(url, stream=True, cookies=cookies)

@@ -1,3 +1,5 @@
+%Use for writing document only
+
 function convert_data()
 	source_root_dir = '.';
 	target_root_dir = 'viton_resize';
@@ -18,21 +20,24 @@ function convert_data()
 end
 
 function convert(source_root_dir, target_root_dir, mode, flag_resize, fine_height, fine_width)
-	cmap = importdata('human_colormap.mat');
+    %Read color palette
+    cmap = importdata('human_colormap.mat');
 	point_num = 18;
 	
-	% make new dir
+	%Make new dir (for 5 data types)
 	dir_list = {'cloth', 'cloth-mask', 'image', 'image-parse', 'pose'};
+	%%check dir viton_resize/train or viton_resize/test
 	if ~exist([target_root_dir '/' mode],'dir');
 		mkdir([target_root_dir '/' mode]);
 	end
+	%%start create dir train or test /cloth,cloth-mask,image,image-parse,pose
 	for i = 1:length(dir_list);
 		if ~exist([target_root_dir '/' mode '/' dir_list{i}],'dir');
 			mkdir([target_root_dir '/' mode '/' dir_list{i}]);
 		end
 	end
 
-	% read train pairs
+	%Read train pairs / test pairs
 	[im_names, cloth_names] = textread(['viton_' mode '_pairs.txt'],'%s %s\n');
 	N = length(im_names);
 	for i = 1:N;
@@ -40,28 +45,28 @@ function convert(source_root_dir, target_root_dir, mode, flag_resize, fine_heigh
 		cname = cloth_names{i};
 		fprintf('%d/%d: %s %s\n', i, N, imname, cname);
 	   
-		% generate cloth mask
+%CLOTH-MASK: Generate cloth-mask
 		im_c = imread([source_root_dir '/' 'women_top/' cname]);
-		
-		% generate parsing result
+
+%IMAGE-PARSE: Generate parsing result
 		im = imread([source_root_dir '/' 'women_top/' imname]);
-		h = size(im,1);
-		w = size(im,2);
-		s_name = strrep(imname,'.jpg','.mat');
+		h = size(im,1); %get image height
+		w = size(im,2); %get image width
+		s_name = strrep(imname,'.jpg','.mat'); %change name from .jpg to .mat
 		segment = importdata([source_root_dir '/' 'segment/' s_name]);
-		segment = segment';
+		segment = segment'; %same with transpose (^T)
 	
-	    if h > w
+	    if h > w %correct image size
 	        segment = segment(:,1:int32(641.0*w/h));
 	    else
 	        segment = segment(1:int32(641.8*h/w),:);
 	    end
-	    segment = imresize(segment, [h,w], 'nearest');
+	    segment = imresize(segment, [h,w], 'nearest'); %resize using nearest neightbor interpolation
 	
 
-	    % load pose
-	    pose = importdata([source_root_dir '/' 'pose/' s_name]);
-	    key_points = zeros(point_num,3);
+%POSE: load pose
+	    pose = importdata([source_root_dir '/' 'pose/' s_name]); %read .mat file
+	    key_points = zeros(point_num,3); %zero 2-dim matrix with: point_num = 18
 	    for j = 1:point_num
 	        index = int32(pose.subset(j))+1;
 	        if index ~= 0
@@ -69,6 +74,7 @@ function convert(source_root_dir, target_root_dir, mode, flag_resize, fine_heigh
 	        end       
 	    end 
 
+%CLOTH & IMAGE
 		% save cloth & image, resize the results
 		if flag_resize;
 			im_c = imresize(im_c, [fine_height, fine_width], 'bilinear');

@@ -12,7 +12,8 @@ import numpy as np
 import json
 
 class CPDataset(data.Dataset):
-    """Dataset for CP-VTON.
+    """
+    Dataset class for CP-VTON.
     """
     def __init__(self, opt):
         super(CPDataset, self).__init__()
