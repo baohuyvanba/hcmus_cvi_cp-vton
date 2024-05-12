@@ -194,7 +194,7 @@ class CPDataLoader(object):
 
 
 if __name__ == "__main__":
-    print("Check the dataset for geometric matching module!")
+    print("Check the dataset for geometric matching module (GMM)!")
     
     import argparse
     parser = argparse.ArgumentParser()
@@ -213,8 +213,7 @@ if __name__ == "__main__":
     dataset = CPDataset(opt)
     data_loader = CPDataLoader(opt, dataset)
 
-    print('Size of the dataset: %05d, dataloader: %04d' \
-            % (len(dataset), len(data_loader.data_loader)))
+    print('Size of the dataset: %05d, dataloader: %04d' %(len(dataset), len(data_loader.data_loader)))
     first_item = dataset.__getitem__(0)
     first_batch = data_loader.next_batch()
 
