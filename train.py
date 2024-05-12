@@ -32,7 +32,7 @@ def get_opt():
     parser.add_argument('-b', '--batch-size', type=int, default=4)
     parser.add_argument("--stage", default="GMM")
     #Define arguments related to data
-    parser.add_argument("--dataroot", default = "data")
+    parser.add_argument("--dataroot", default = "data") #directory to data 
     parser.add_argument("--datamode", default = "train")
     parser.add_argument("--data_list", default = "train_pairs.txt")
     #Define arguments related to image processing
@@ -217,6 +217,8 @@ def main():
     if opt.stage == 'GMM':
         #GMM model
         model = GMM(opt)
+        
+        #Checking if there are already a model, load the model and train more
         if not opt.checkpoint =='' and os.path.exists(opt.checkpoint):
             load_checkpoint(model, opt.checkpoint)
         train_gmm(opt, train_loader, model, writer)

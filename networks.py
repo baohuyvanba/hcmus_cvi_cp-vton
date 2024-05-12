@@ -404,17 +404,22 @@ class UnetSkipConnectionBlock(nn.Module):
         else:
             return torch.cat([x, self.model(x)], 1)
 
+# VGG19 module having 5 
 class Vgg19(nn.Module):
     def __init__(self, requires_grad=False):
         super(Vgg19, self).__init__()
         # vgg_pretrained_features = models.vgg19(pretrained=True).features
         vgg_pretrained_features = models.vgg19(weights=models.VGG19_Weights.DEFAULT).features
 
+         # Define slices for different layers of VGG19
         self.slice1 = torch.nn.Sequential()
         self.slice2 = torch.nn.Sequential()
         self.slice3 = torch.nn.Sequential()
         self.slice4 = torch.nn.Sequential()
         self.slice5 = torch.nn.Sequential()
+        
+        # Populate slices with layers from the pretrained VGG19 model
+        # Each slice contains a subset of layers from the VGG19 model
         for x in range(2):
             self.slice1.add_module(str(x), vgg_pretrained_features[x])
         for x in range(2, 7):
@@ -429,6 +434,7 @@ class Vgg19(nn.Module):
             for param in self.parameters():
                 param.requires_grad = False
 
+    #Forward pass through each slide to extract features and return list of outputs of each slice
     def forward(self, X):
         h_relu1 = self.slice1(X)
         h_relu2 = self.slice2(h_relu1)
@@ -438,6 +444,7 @@ class Vgg19(nn.Module):
         out = [h_relu1, h_relu2, h_relu3, h_relu4, h_relu5]
         return out
 
+#Computing VGG Loss
 class VGGLoss(nn.Module):
     def __init__(self, layids = None):
         super(VGGLoss, self).__init__()
@@ -485,6 +492,7 @@ class GMM(nn.Module):
         grid = self.gridGen(theta)
         return grid, theta
 
+#Saving the weights of model
 def save_checkpoint(model, save_path):
     if not os.path.exists(os.path.dirname(save_path)):
         os.makedirs(os.path.dirname(save_path))
@@ -492,6 +500,7 @@ def save_checkpoint(model, save_path):
     torch.save(model.cpu().state_dict(), save_path)
     model.cuda()
 
+#Load weights of model
 def load_checkpoint(model, checkpoint_path):
     if not os.path.exists(checkpoint_path):
         return

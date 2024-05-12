@@ -3,6 +3,7 @@ import torch
 from PIL import Image
 import os
 
+#Create a tensor for board, just like a place for saving image
 def tensor_for_board(img_tensor):
     # map into [0,1]
     tensor = (img_tensor.clone()+1) * 0.5
@@ -13,6 +14,8 @@ def tensor_for_board(img_tensor):
 
     return tensor
 
+#Create a tensor for board, just like a place for saving list of image for example, 
+# having 3x3 list will create a board having 3x3 size
 def tensor_list_for_board(img_tensors_list):
     grid_h = len(img_tensors_list)
     grid_w = max(len(img_tensors)  for img_tensors in img_tensors_list)
@@ -30,6 +33,7 @@ def tensor_list_for_board(img_tensors_list):
 
     return canvas
 
+#Add one image into the board (actually writing the data of image to the tensor)
 def board_add_image(board, tag_name, img_tensor, step_count):
     tensor = tensor_for_board(img_tensor)
 
