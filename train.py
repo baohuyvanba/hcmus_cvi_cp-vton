@@ -123,86 +123,106 @@ def train_gmm(opt, train_loader, model, board):
 
 
 def train_tom(opt, train_loader, model, board):
+    """
+    This function run the train processs for the TOM model on the provided data loader.
+    Args:
+        opt (argparse.Namespace): Namespace containing the parsed command-line arguments.
+        train_loader (DataLoader): Data loader for training data.
+        model (nn.Module): The TOM model to be trained.
+        board (object): Object for logging information (e.g., TensorBoard).
+    """
+    # Create model and move to GPU: Distributed Data Parallel (DDP) for multi-GPU training
     model = DDP(model.to(gpus_id), [gpus_id])
     model.train()
     
-    # criterion
-    criterionL1 = nn.L1Loss()
-    criterionVGG = VGGLoss()
-    criterionMask = nn.L1Loss()
-    
-    # optimizer
+    #Define loss function: 2 L1 Loss, 1 VGGLoss
+    criterionL1 = nn.L1Loss()   #for measuring pixel-wise difference
+    criterionVGG = VGGLoss()    #VGG-based perceptual loss
+    criterionMask = nn.L1Loss() #for mask
+    #Define optimizer: Adam optimizer with defined learning rate and betas
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr, betas=(0.5, 0.999))
-    scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda = lambda step: 1.0 -
-            max(0, step - opt.keep_step) / float(opt.decay_step + 1))
-    
+    #Learning rate scheduler: keep in keep_step, and decrease in decay_step
+    # scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda = lambda step: 1.0 -
+    #             max(0, step - opt.keep_step) / float(opt.decay_step + 1))
+
+    #Training loop process
     for step in tqdm(range(opt.keep_step + opt.decay_step)):
+        #Set epoch for the data sampler
         train_loader.data_loader.sampler.set_epoch(step)
+        #Get a batch of data from dataset
         inputs = train_loader.next_batch()
             
-        im = inputs['image'].to(gpus_id)
-        im_pose = inputs['pose_image']
-        im_h = inputs['head']
-        shape = inputs['shape']
+        image        = inputs['image'].to(gpus_id)      # [4, 3, 256, 192]
+        img_pose     = inputs['pose_image']             # [4, 1, 256, 192]
+        img_headmsk  = inputs['head']                   # [4, 3, 256, 192]
+        person_shape = inputs['shape']                  # [4, 1, 256, 192]
+        agnostic     = inputs['agnostic'].to(gpus_id)   # [4, 22, 256, 192]
+        cloth        = inputs['cloth'].to(gpus_id)      # [4, 3, 256, 192]
+        cthmask      = inputs['cloth_mask'].to(gpus_id) # [4, 1, 256, 192]
 
-        agnostic = inputs['agnostic'].to(gpus_id)
-        c = inputs['cloth'].to(gpus_id)
-        cm = inputs['cloth_mask'].to(gpus_id)
-        
-        outputs = model(torch.cat([agnostic, c],1))
+        #Forward pass through the model
+        outputs = model(torch.cat([agnostic, cloth],1))
+
+        #Split the model output into predicted rendered image and mask composite
         p_rendered, m_composite = torch.split(outputs, 3,1)
+        #Apply activation functions: tanh and sigmoid
         p_rendered = torch.tanh(p_rendered)
         m_composite = torch.sigmoid(m_composite)
-        p_tryon = c * m_composite+ p_rendered * (1 - m_composite)
 
-        visuals = [ [im_h, shape, im_pose], 
-                   [c, cm*2-1, m_composite*2-1], 
-                   [p_rendered, p_tryon, im]]
-            
-        loss_l1 = criterionL1(p_tryon, im)
-        loss_vgg = criterionVGG(p_tryon, im)
-        loss_mask = criterionMask(m_composite, cm)
+        #Combine predicted rendered image and mask for final try-on image
+        p_tryon = cloth * m_composite+ p_rendered * (1 - m_composite)
+
+        #Visualizations for logging
+        visuals = [ [img_headmsk, person_shape, img_pose], # Head, shape, and pose images
+                   [cloth, cthmask*2-1, m_composite*2-1],  # Cloth, scaled cloth mask, and scaled mask composite
+                   [p_rendered, p_tryon, image]]           # Predicted rendered image, try-on image, and input image
+
+        #Calculate loss using loss function
+        loss_l1 = criterionL1(p_tryon, image)           #L1 loss between try-on and input image
+        loss_vgg = criterionVGG(p_tryon, image)         #VGGLoss between try-on image and image (ground truth) (perceptual similarity)
+        loss_mask = criterionMask(m_composite, cthmask) #L1 loss between mask composite (predicted) and cloth mask (ground truth)
+        #Combine all losses
         loss = loss_l1 + loss_vgg + loss_mask
+
+        #Backpropagation and optimization
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-            
+
+        #Logging: same with train_gmm
         if (step+1) % opt.display_count == 0:
             board_add_images(board, 'combine', visuals, step+1)
             board.add_scalar('metric', loss.item(), step+1)
             board.add_scalar('L1', loss_l1.item(), step+1)
             board.add_scalar('VGG', loss_vgg.item(), step+1)
             board.add_scalar('MaskL1', loss_mask.item(), step+1)
-
+        #Save weight: same with train_gmm
         if (step+1) % opt.save_count == 0:
             save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%06d.pth' % (step+1)))
-
-
 
 def main():
     opt = get_opt()
     print("Start to train stage: %s, named: %s!" % (opt.stage, opt.name))
    
-    # create dataset 
+    #Read Data: from dataset and create data loader
     train_dataset = CPDataset(opt)
-
-    # create dataloader
     train_loader = CPDataLoader(opt, train_dataset)
 
-    # visualization
+    #Visualization
     if not os.path.exists(opt.tensorboard_dir):
         os.makedirs(opt.tensorboard_dir)
-
     writer = SummaryWriter(os.path.join(opt.tensorboard_dir, opt.name))
-    
-    # create model & train & save the final checkpoint
+
+    #Create model, train & save the final checkpoint
     if opt.stage == 'GMM':
+        #GMM model
         model = GMM(opt)
         if not opt.checkpoint =='' and os.path.exists(opt.checkpoint):
             load_checkpoint(model, opt.checkpoint)
         train_gmm(opt, train_loader, model, writer)
         save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'gmm_final.pth'))
     elif opt.stage == 'TOM':
+        #TOM model
         model = UnetGenerator(25, 4, 6, ngf=64, norm_layer=nn.InstanceNorm2d)
         if not opt.checkpoint =='' and os.path.exists(opt.checkpoint):
             load_checkpoint(model, opt.checkpoint)
@@ -211,7 +231,7 @@ def main():
     else:
         raise NotImplementedError('Model [%s] is not implemented' % opt.stage)
         
-  
+    #Finish
     print('Finished training %s, nameed: %s!' % (opt.stage, opt.name))
 
 if __name__ == "__main__":
