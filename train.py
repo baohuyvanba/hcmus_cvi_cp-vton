@@ -209,7 +209,7 @@ def main():
    
     #Read Data: from dataset and create data loader
     train_dataset = CPDataset(opt)
-    train_loader = CPDataLoader(opt, train_dataset).to(device_id)
+    train_loader = CPDataLoader(opt, train_dataset)
 
     #Visualization
     if not os.path.exists(opt.tensorboard_dir):
