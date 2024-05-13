@@ -2,13 +2,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from torch.nn import init
 from torchvision import models
-
 import os
-
-import numpy as np
 
 def weights_init_normal(m):
     classname = m.__class__.__name__

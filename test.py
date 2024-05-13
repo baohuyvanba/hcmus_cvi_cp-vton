@@ -9,7 +9,6 @@ import os
 from tqdm import tqdm
 import time
 from cp_dataset import CPDataset, CPDataLoader
-from FASCODE_IMAGE import FASCODE_IMAGE
 
 from networks import GMM, UnetGenerator, load_checkpoint
 
