@@ -176,11 +176,11 @@ def train_tom(opt, train_loader, model, board, device_id):
                    [p_rendered, p_tryon, image]]           # Predicted rendered image, try-on image, and input image
 
         #Calculate loss using loss function
-        loss_l1 = criterionL1(p_tryon, image)           #L1 loss between try-on and input image
-        loss_vgg = criterionVGG(p_tryon, image)         #VGGLoss between try-on image and image (ground truth) (perceptual similarity)
-        loss_mask = criterionMask(m_composite, cthmask) #L1 loss between mask composite (predicted) and cloth mask (ground truth)
+        loss_l1 = criterionL1(p_tryon, image).to(device_id)           #L1 loss between try-on and input image
+        loss_vgg = criterionVGG(p_tryon, image).to(device_id)         #VGGLoss between try-on image and image (ground truth) (perceptual similarity)
+        loss_mask = criterionMask(m_composite, cthmask).to(device_id) #L1 loss between mask composite (predicted) and cloth mask (ground truth)
         #Combine all losses
-        loss = loss_l1 + loss_vgg + loss_mask
+        loss = (loss_l1 + loss_vgg + loss_mask).to(device_id)
 
         #Backpropagation and optimization
         optimizer.zero_grad()
