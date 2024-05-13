@@ -208,7 +208,7 @@ def main():
     print("Start to train stage: %s, named: %s!" % (opt.stage, opt.name))
    
     #Read Data: from dataset and create data loader
-    train_dataset = CPDataset(opt).to(device_id)
+    train_dataset = CPDataset(opt)
     train_loader = CPDataLoader(opt, train_dataset).to(device_id)
 
     #Visualization
