@@ -25,7 +25,7 @@ def get_opt():
     #Define arguments related to model and training: name, batch size, number of workers
     parser = argparse.ArgumentParser()
     parser.add_argument("--name", default = "GMM")
-    parser.add_argument('-j', '--workers', type=int, default=6)
+    parser.add_argument('-j', '--workers', type=int, default=2)
     parser.add_argument('-b', '--batch-size', type=int, default=4)
     parser.add_argument("--stage", default="GMM")
     #Define arguments related to data
@@ -100,7 +100,7 @@ def train_gmm(opt, train_loader, model, board, device_id):
         warped_grid = F.grid_sample(img_grid, grid, padding_mode='zeros', align_corners=True)
 
         #Visualizations for logging
-        visuals = [ [img_headmsk, person_shape, img_pose],         #head, shape, pose
+        visuals = [[img_headmsk, person_shape, img_pose],          #head, shape, pose
                    [cloth, warped_cloth, img_cthmask],             #cloth, warped cloth, parsed cloth images
                    [warped_grid, (warped_cloth+image)*0.5, image]] #warped grid, combine image with warped_cloth, input image
 
@@ -208,8 +208,8 @@ def main():
     print("Start to train stage: %s, named: %s!" % (opt.stage, opt.name))
    
     #Read Data: from dataset and create data loader
-    train_dataset = CPDataset(opt)
-    train_loader = CPDataLoader(opt, train_dataset)
+    train_dataset = CPDataset(opt).to(device_id)
+    train_loader = CPDataLoader(opt, train_dataset).to(device_id)
 
     #Visualization
     if not os.path.exists(opt.tensorboard_dir):
