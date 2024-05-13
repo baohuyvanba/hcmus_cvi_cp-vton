@@ -199,6 +199,8 @@ def train_tom(opt, train_loader, model, board, device_id):
             save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%06d.pth' % (step+1)))
 
 def main():
+    dist.init_process_group(backend='nccl')
+    torch.cuda.manual_seed_all(244)
     rank = dist.get_rank()
     device_id = rank % torch.cuda.device_count()
 
