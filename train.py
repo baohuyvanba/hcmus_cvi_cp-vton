@@ -203,6 +203,7 @@ def main():
     torch.cuda.manual_seed_all(244)
     rank = dist.get_rank()
     device_id = rank % torch.cuda.device_count()
+    torch.cuda.set_device(device_id)
 
     opt = get_opt()
     print("Start to train stage: %s, named: %s!" % (opt.stage, opt.name))
