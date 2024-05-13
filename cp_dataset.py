@@ -169,47 +169,26 @@ class CPDataset(data.Dataset):
     def __len__(self):
         return len(self.im_names)
 
-# class CPDataLoader(object):
-#     def __init__(self, opt, dataset):
-#         super(CPDataLoader, self).__init__()
-#
-#         self.dataset = dataset
-#         self.data_loader = torch.utils.data.DataLoader(
-#                 dataset,
-#                 batch_size=opt.batch_size,
-#                 num_workers=opt.workers,
-#                 pin_memory=True,
-#                 sampler=DistributedSampler(dataset)
-#                 )
-#         self.data_iter = self.data_loader.__iter__()
-#
-#     def next_batch(self):
-#         try:
-#             batch = next(self.data_iter)
-#         except StopIteration:
-#             self.data_iter = self.data_loader.__iter__()
-#             batch = self.data_iter.__next__()
-#
-#         return batch
-
-class CPDataLoader(torch.utils.data.DataLoader):
+class CPDataLoader(object):
     def __init__(self, opt, dataset):
-        super(CPDataLoader, self).__init__(dataset,
-                                           batch_size=opt.batch_size,
-                                           num_workers=opt.workers,
-                                           pin_memory=True,
-                                           sampler=DistributedSampler(dataset))
-        self.data_iter = iter(self)  # Use iter directly on the data loader
+        super(CPDataLoader, self).__init__()
 
-    def __iter__(self):
-        return super().__iter__()  # Inherit iterator behavior
+        self.dataset = dataset
+        self.data_loader = torch.utils.data.DataLoader(
+                dataset,
+                batch_size=opt.batch_size,
+                num_workers=opt.workers,
+                pin_memory=True,
+                sampler=DistributedSampler(dataset)
+                )
+        self.data_iter = self.data_loader.__iter__()
 
     def next_batch(self):
         try:
             batch = next(self.data_iter)
         except StopIteration:
-            self.data_iter = iter(self)  # Restart iterator on StopIteration
-            batch = next(self.data_iter)
+            self.data_iter = self.data_loader.__iter__()
+            batch = self.data_iter.__next__()
 
         return batch
 
