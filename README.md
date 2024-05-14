@@ -69,6 +69,7 @@ torchrun \
     --name='TOM' --stage='TOM' --workers=1 --checkpoint='/kaggle/input/tom/pytorch/tomfinal100k/1/tom_final.pth' \
     --data_list='/kaggle/input/vton-cp-resized/viton_resize/test_pairs.txt' --datamode='test'
 ```
+## Test with Pre-trained model
 
 ## References
 Mô hình trên được cài đặt dựa trên bài viết:
