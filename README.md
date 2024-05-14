@@ -1,5 +1,6 @@
 # Toward Characteristic-Preserving Image-based Virtual Try-on Network
-
+## Cài đặt môi trường
+Thực thi file `environment.yml` để cài đặt môi trường phù hợp.
 ## Dataset:
 Mô hình sử dụng bộ dataset VITON-resize được sửa đổi từ bộ dữ liệu VITON để phù hợp với thiết kế mô hình. Dữ liệu có thể tải về theo link [GoogleDrive](https://drive.google.com/open?id=1MxCUvKxejnwWnoZ-KoCyMCXo3TLhRuTo).
 ## GMM (Geometric Matching Module)
@@ -71,7 +72,8 @@ torchrun \
 ```
 ## Test with Pre-trained model
 Dẫn đường dẫn đến thư mục [Release](https://drive.google.com/drive/folders/1UmfTKHUZcw5HXFlES_A0e7WcSkm8oarm?usp=sharing).
-Tại giao diện dòng lệnh, ta thực thi: 'python main.py <input_path> <outout_path>'
+
+Tại giao diện dòng lệnh, ta thực thi: `python main.py <input_path> <output_path>`
 Tại input folder sẽ bao gồm các thư mục tập tin sau: 
 - pose
 - image-parse
@@ -79,6 +81,7 @@ Tại input folder sẽ bao gồm các thư mục tập tin sau:
 - cloth
 - cloth-mask
 - test_pairs.txt
+Mô hình được huấn luyện trên bộ dữ liệu `train` với `100.000 epochs`
 ## References
 Mô hình trên được cài đặt dựa trên bài viết:
 
