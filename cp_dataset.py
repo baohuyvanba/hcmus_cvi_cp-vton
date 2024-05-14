@@ -2,7 +2,7 @@
 import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
-from torch.utils.data import RandomSampler
+from torch.utils.data import DistributedSampler
 
 from PIL import Image
 from PIL import ImageDraw
@@ -189,7 +189,7 @@ class CPDataLoader(object):
         super(CPDataLoader, self).__init__()
 
         if opt.shuffle:
-            train_sampler = torch.utils.data.sampler.RandomSampler(dataset)
+            train_sampler = DistributedSampler(dataset)
         else:
             train_sampler = None
 
