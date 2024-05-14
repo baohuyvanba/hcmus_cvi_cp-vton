@@ -103,7 +103,7 @@ def train_gmm(opt, train_loader, model, board, device_id):
         warped_grid = F.grid_sample(img_grid, grid, padding_mode='zeros', align_corners=True)
 
         #Visualizations for logging
-        visuals = [ [img_headmsk, person_shape, img_pose],         #head, shape, pose
+        visuals = [[img_headmsk, person_shape, img_pose],         #head, shape, pose
                    [cloth, warped_cloth, img_cthmask],             #cloth, warped cloth, parsed cloth images
                    [warped_grid, (warped_cloth+image)*0.5, image]] #warped grid, combine image with warped_cloth, input image
 
