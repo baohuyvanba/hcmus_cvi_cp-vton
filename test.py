@@ -17,7 +17,6 @@ from visualization import board_add_image, board_add_images, save_images
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-
 def get_opt():
     #Define arguments related to model and training: name, batch size, number of workers
     parser = argparse.ArgumentParser()

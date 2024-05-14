@@ -16,9 +16,6 @@ from visualization import board_add_image, board_add_images                     
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-dist.init_process_group("nccl")
-gpus_id = int(os.environ["LOCAL_RANK"])
-
 def get_opt():
     """
     This function defines the command-line arguments for the program.
