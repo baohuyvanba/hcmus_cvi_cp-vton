@@ -7,9 +7,7 @@ import torch.nn.functional as F
 import argparse
 import os
 from tqdm import tqdm
-import time
 from cp_dataset import CPDataset, CPDataLoader
-from FASCODE_IMAGE import FASCODE_IMAGE
 
 from networks import GMM, UnetGenerator, load_checkpoint
 
@@ -19,8 +17,6 @@ from visualization import board_add_image, board_add_images, save_images
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-dist.init_process_group("nccl")
-gpus_id = dist.get_rank()
 
 def get_opt():
     #Define arguments related to model and training: name, batch size, number of workers
@@ -29,9 +25,9 @@ def get_opt():
     parser.add_argument('-j', '--workers', type=int, default=6)
     parser.add_argument('-b', '--batch-size', type=int, default=4)
      #Define arguments related to data
-    parser.add_argument("--dataroot", default = "data") #directory to data
+    parser.add_argument("--dataroot", default = "data")
     parser.add_argument("--datamode", default = "test")
-    parser.add_argument("--stage", default = "TOM") # change to TOM or GMM
+    parser.add_argument("--stage", default = "TOM")
     parser.add_argument("--data_list", default = "test_pairs.txt") #txt includes list of images pairs for test
     
      #Define arguments related to image processing
@@ -50,17 +46,14 @@ def get_opt():
     opt = parser.parse_args()
     return opt
 
-def test_gmm(opt, test_loader, model, board):
+def test_gmm(opt, test_loader, model, board, device_id):
+    gpus_id = device_id
     model = DDP(model.cuda(), [gpus_id])
     model.eval()
 
     base_name = os.path.basename(opt.checkpoint)
-    # save_dir = os.path.join(opt.result_dir, base_name, opt.datamode)
-    save_dir = "data/test/"
-
-    # if not os.path.exists(save_dir):
-    #     os.makedirs(save_dir)
-
+    #save_dir = os.path.join(opt.result_dir, base_name, opt.datamode)
+    save_dir = "data/train/"
     warp_cloth_dir = os.path.join(save_dir, 'warp-cloth')
     warp_mask_dir = os.path.join(save_dir, 'warp-mask')
 
@@ -71,7 +64,6 @@ def test_gmm(opt, test_loader, model, board):
 
     for step, inputs in tqdm(enumerate(test_loader.data_loader)):
         test_loader.data_loader.sampler.set_epoch(step)
-        # iter_start_time = time.time()
         
         #Loading data to GPU for computing
         c_names = inputs['c_name']
@@ -102,7 +94,8 @@ def test_gmm(opt, test_loader, model, board):
         if (step+1) % opt.display_count == 0:
             board_add_images(board, 'combine', visuals, step+1)
         
-def test_tom(opt, test_loader, model, board):
+def test_tom(opt, test_loader, model, board, device_id):
+    gpus_id = device_id
     model = DDP(model.cuda(), [gpus_id])
     model.eval()
     
@@ -143,31 +136,35 @@ def test_tom(opt, test_loader, model, board):
             board_add_images(board, 'combine', visuals, step+1)
 
 def main():
+    dist.init_process_group(backend='nccl')
+    torch.cuda.manual_seed_all(244)
+    rank = dist.get_rank()
+    device_id = rank % torch.cuda.device_count()
+    torch.cuda.set_device(device_id)
+
     opt = get_opt()
     print("Start to test stage: %s, named: %s!" % (opt.stage, opt.name))
-   
-    # create dataset 
-    train_dataset = CPDataset(opt)
 
-    # create dataloader
+    #Read Data: from dataset and create data loader
+    train_dataset = CPDataset(opt)
     train_loader = CPDataLoader(opt, train_dataset)
 
-    # visualization
+    #Visualization
     if not os.path.exists(opt.tensorboard_dir):
         os.makedirs(opt.tensorboard_dir)
     board = SummaryWriter(log_dir = os.path.join(opt.tensorboard_dir, opt.name))
    
-    # create model & train
+    #Create model & test
     if opt.stage == 'GMM':
         model = GMM(opt)
         load_checkpoint(model, opt.checkpoint)
         with torch.no_grad():
-            test_gmm(opt, train_loader, model, board)
+            test_gmm(opt, train_loader, model, board, device_id)
     elif opt.stage == 'TOM':
         model = UnetGenerator(25, 4, 6, ngf=64, norm_layer=nn.InstanceNorm2d)
         load_checkpoint(model, opt.checkpoint)
         with torch.no_grad():
-            test_tom(opt, train_loader, model, board)
+            test_tom(opt, train_loader, model, board, device_id)
     else:
         raise NotImplementedError('Model [%s] is not implemented' % opt.stage)
   

@@ -56,7 +56,7 @@ def get_opt():
     opt = parser.parse_args()
     return opt
 
-def train_gmm(opt, train_loader, model, board):
+def train_gmm(opt, train_loader, model, board, device_id):
     """
     This function run the train processs for the GMM model on the provided data loader get from CP-VTON dataset.
 
@@ -66,6 +66,7 @@ def train_gmm(opt, train_loader, model, board):
         model (nn.Module): The GMM model to be trained.
         board (object): Object for logging information (e.g., TensorBoard).
     """
+    gpus_id = device_id
     #Create model and move to GPU: Distributed Data Parallel (DDP) for multi-GPU training
     model = DDP(model.to(gpus_id), [gpus_id])
     model.train()
@@ -121,8 +122,7 @@ def train_gmm(opt, train_loader, model, board):
         if (epoch+1) % opt.save_count == 0:
             save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%06d.pth' % (epoch+1)))
 
-
-def train_tom(opt, train_loader, model, board):
+def train_tom(opt, train_loader, model, board, device_id):
     """
     This function run the train processs for the TOM model on the provided data loader.
     Args:
@@ -131,14 +131,15 @@ def train_tom(opt, train_loader, model, board):
         model (nn.Module): The TOM model to be trained.
         board (object): Object for logging information (e.g., TensorBoard).
     """
+    gpus_id = device_id
     # Create model and move to GPU: Distributed Data Parallel (DDP) for multi-GPU training
     model = DDP(model.to(gpus_id), [gpus_id])
     model.train()
     
     #Define loss function: 2 L1 Loss, 1 VGGLoss
-    criterionL1 = nn.L1Loss()   #for measuring pixel-wise difference
-    criterionVGG = VGGLoss()    #VGG-based perceptual loss
-    criterionMask = nn.L1Loss() #for mask
+    criterionL1   = nn.L1Loss()   #for measuring pixel-wise difference
+    criterionVGG  = VGGLoss()     #VGG-based perceptual loss
+    criterionMask = nn.L1Loss()   #for mask
     #Define optimizer: Adam optimizer with defined learning rate and betas
     optimizer = torch.optim.Adam(model.parameters(), lr=opt.lr, betas=(0.5, 0.999))
     #Learning rate scheduler: keep in keep_step, and decrease in decay_step
@@ -201,6 +202,12 @@ def train_tom(opt, train_loader, model, board):
             save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'step_%06d.pth' % (step+1)))
 
 def main():
+    dist.init_process_group(backend='nccl')
+    torch.cuda.manual_seed_all(244)
+    rank = dist.get_rank()
+    device_id = rank % torch.cuda.device_count()
+    torch.cuda.set_device(device_id)
+
     opt = get_opt()
     print("Start to train stage: %s, named: %s!" % (opt.stage, opt.name))
    
@@ -221,14 +228,14 @@ def main():
         #Checking if there are already a model, load the model and train more
         if not opt.checkpoint =='' and os.path.exists(opt.checkpoint):
             load_checkpoint(model, opt.checkpoint)
-        train_gmm(opt, train_loader, model, writer)
+        train_gmm(opt, train_loader, model, writer, device_id)
         save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'gmm_final.pth'))
     elif opt.stage == 'TOM':
         #TOM model
         model = UnetGenerator(25, 4, 6, ngf=64, norm_layer=nn.InstanceNorm2d)
         if not opt.checkpoint =='' and os.path.exists(opt.checkpoint):
             load_checkpoint(model, opt.checkpoint)
-        train_tom(opt, train_loader, model, writer)
+        train_tom(opt, train_loader, model, writer, device_id)
         save_checkpoint(model, os.path.join(opt.checkpoint_dir, opt.name, 'tom_final.pth'))
     else:
         raise NotImplementedError('Model [%s] is not implemented' % opt.stage)
