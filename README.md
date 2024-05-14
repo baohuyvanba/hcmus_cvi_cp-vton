@@ -70,7 +70,15 @@ torchrun \
     --data_list='/kaggle/input/vton-cp-resized/viton_resize/test_pairs.txt' --datamode='test'
 ```
 ## Test with Pre-trained model
-
+Dẫn đường dẫn đến thư mục [Release](https://drive.google.com/drive/folders/1UmfTKHUZcw5HXFlES_A0e7WcSkm8oarm?usp=sharing).
+Tại giao diện dòng lệnh, ta thực thi: 'python main.py <input_path> <outout_path>'
+Tại input folder sẽ bao gồm các thư mục tập tin sau: 
+- pose
+- image-parse
+- image
+- cloth
+- cloth-mask
+- test_pairs.txt
 ## References
 Mô hình trên được cài đặt dựa trên bài viết:
 
