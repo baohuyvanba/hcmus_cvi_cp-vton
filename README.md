@@ -38,7 +38,7 @@ torchrun \
 
 ## Try-on Module (TOM)
 ### Train (quá trình huấn luyện)
-Trước khi thực hiện train Try-on Module, ta sẽ cần sử dụng môđun GMM để tạo ra dữ liệu tạo thư mục `warped-mask` và `warped-cloth`. Các kết quả `warped-mask` và `warped-cloth` sẽ là đầu vào cho mô hình TOM.
+Trước khi thực hiện train Try-on Module, ta sẽ cần sử dụng môđun GMM để tạo ra dữ liệu tạo thư mục `warped-mask` và `warped-cloth`. Các kết quả `warped-mask` và `warped-cloth` sẽ là đầu vào cho mô hình TOM. Dữ liệu có được sau quá trình thực thi môđun GMM ta kết hợp với bộ dữ liệu ban đầu làm đầu vào cho môđun TOM. Dữ liệu có thể tải về tại [Google Drive](https://drive.google.com/file/d/14vS4Thf7ma3Q4uXdvLnpzhSJ0SLgWLaQ/view?usp=drive_link)
 Ta thực thi file `train_train_tom.sh` 
 
 ### Evaluation (đánh giá)
