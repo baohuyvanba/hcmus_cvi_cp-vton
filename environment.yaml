@@ -1,0 +1,17 @@
+name: cpvton
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.10  # Replace with desired python version
+  - torch
+  - torchvision
+  - pillow
+  - numpy
+  - json
+  - tqdm
+  - matplotlib
+  - scipy
+  - tensorboard
