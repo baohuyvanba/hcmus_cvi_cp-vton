@@ -38,11 +38,37 @@ torchrun \
 
 ## Try-on Module (TOM)
 ### Train (quá trình huấn luyện)
-Trước khi thực hiện train Try-on Module, ta sẽ cần sử dụng môđun GMM để tạo ra dữ liệu tạo thư mục `warped-mask` và `warped-cloth`. Các kết quả `warped-mask` và `warped-cloth` sẽ là đầu vào cho mô hình TOM. Dữ liệu có được sau quá trình thực thi môđun GMM ta kết hợp với bộ dữ liệu ban đầu làm đầu vào cho môđun TOM. Dữ liệu có thể tải về tại [Google Drive](https://drive.google.com/file/d/14vS4Thf7ma3Q4uXdvLnpzhSJ0SLgWLaQ/view?usp=drive_link)
-Ta thực thi file `train_train_tom.sh` 
+Trước khi thực hiện train Try-on Module, ta sẽ cần sử dụng môđun GMM để tạo ra dữ liệu tạo thư mục `warped-mask` và `warped-cloth` sử dụng lệnh `bash run_gmm_dataset`. Các kết quả `warped-mask` và `warped-cloth` sẽ là đầu vào cho mô hình TOM. Dữ liệu có được sau quá trình thực thi môđun GMM ta kết hợp với bộ dữ liệu ban đầu làm đầu vào cho môđun TOM. Dữ liệu có thể tải về tại [Google Drive](https://drive.google.com/file/d/14vS4Thf7ma3Q4uXdvLnpzhSJ0SLgWLaQ/view?usp=drive_link)<br>
+Ta thực thi file `train_train_tom.sh`
+``` shell
+torchrun \
+  --standalone \
+  --nnodes=1 \
+  --nproc_per_node=1 \
+  --rdzv_id=100 \
+  --rdzv_backend=c10d \
+  --rdzv_endpoint=localhost:29400 \
+  train.py \
+    --dataroot='/kaggle/input/vton-cp-resized/viton_resize' \
+    --name='TOM' --stage='TOM' --workers=1 --checkpoint_dir='/kaggle/working/' \
+    --save_count=10000 --keep_step=50000 --decay_step=50000
+```
 
 ### Evaluation (đánh giá)
 Để thực hiện kiểm thử trên tập dữ liệu, ta chạy file `run_test_gmm.sh`
+``` shell
+torchrun \
+  --standalone \
+  --nnodes=1 \
+  --nproc_per_node=1 \
+  --rdzv_id=100 \
+  --rdzv_backend=c10d \
+  --rdzv_endpoint=localhost:29400 \
+  test.py \
+    --dataroot='/kaggle/input/vton-cp-resized/viton_resize' \
+    --name='TOM' --stage='TOM' --workers=1 --checkpoint='/kaggle/input/tom/pytorch/tomfinal100k/1/tom_final.pth' \
+    --data_list='/kaggle/input/vton-cp-resized/viton_resize/test_pairs.txt' --datamode='test'
+```
 
 ## References
 Mô hình trên được cài đặt dựa trên bài viết:
