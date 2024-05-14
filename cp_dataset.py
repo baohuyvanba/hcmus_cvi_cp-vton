@@ -39,7 +39,7 @@ class CPDataset(data.Dataset):
         img_names = []
         cth_names = []
 
-        with open(os.path.join(self.data_path, self.data_list), 'r') as f:
+        with open(os.path.join(opt.dataroot, self.data_list), 'r') as f:
             for line in f.readlines():
                 #Form: image_1_name.txt cloth_1_name.txt ...
                 img_name, cth_name = line.strip().split()
