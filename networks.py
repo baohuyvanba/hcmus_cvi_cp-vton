@@ -11,35 +11,6 @@ import os
 #                                              TOM related Module                                                      #
 # ----------------------------------------------------------------------------------------------------------------------#
 
-# Defines the Unet generator.
-# |num_downs|: number of downsamplings in UNet. For example,
-# if |num_downs| == 7, image of size 128x128 will become of size 1x1
-# at the bottleneck
-class UnetGenerator(nn.Module):
-    def __init__(self, in_channels, output_nc, num_downs, ngf=64,
-                 norm_layer=nn.BatchNorm2d, use_dropout=False):
-        super(UnetGenerator, self).__init__()
-        # construct unet structure
-        unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, in_channels=None, submodule=None, norm_layer=norm_layer,
-                                             innermost=True)
-        for i in range(num_downs - 5):
-            unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, in_channels=None, submodule=unet_block,
-                                                 norm_layer=norm_layer, use_dropout=use_dropout)
-        unet_block = UnetSkipConnectionBlock(ngf * 4, ngf * 8, in_channels=None, submodule=unet_block,
-                                             norm_layer=norm_layer)
-        unet_block = UnetSkipConnectionBlock(ngf * 2, ngf * 4, in_channels=None, submodule=unet_block,
-                                             norm_layer=norm_layer)
-        unet_block = UnetSkipConnectionBlock(ngf, ngf * 2, in_channels=None, submodule=unet_block,
-                                             norm_layer=norm_layer)
-        unet_block = UnetSkipConnectionBlock(output_nc, ngf, in_channels=in_channels, submodule=unet_block,
-                                             outermost=True, norm_layer=norm_layer)
-
-        self.model = unet_block
-
-    def forward(self, input):
-        return self.model(input)
-
-
 # Defines the submodule with skip connection.
 # X -------------------identity---------------------- X
 #   |-- downsampling -- |submodule| -- upsampling --|
@@ -52,25 +23,29 @@ class UnetSkipConnectionBlock(nn.Module):
 
         if in_channels is None:
             in_channels = outer_nc
+
+        # Define layers for downsampling, a kernel_size 4x4 and stride 2
         downconv = nn.Conv2d(in_channels, inner_nc, kernel_size=4,
                              stride=2, padding=1, bias=use_bias)
+        # Activation function for down sampling (ReLU)
         downrelu = nn.LeakyReLU(0.2, True)
         downnorm = norm_layer(inner_nc)
+        # Define upsampling layer
         uprelu = nn.ReLU(True)
         upnorm = norm_layer(outer_nc)
-
+        # Define the architecture based on the block's position (outermost, innermost, or intermediate)             
         if outermost:
             upsample = nn.Upsample(scale_factor=2, mode='bilinear')
             upconv = nn.Conv2d(inner_nc * 2, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias)
             down = [downconv]
             up = [uprelu, upsample, upconv, upnorm]
-            model = down + [submodule] + up
+            model = down + [submodule] + up # Combine layers with the nested submodule
         elif innermost:
             upsample = nn.Upsample(scale_factor=2, mode='bilinear')
             upconv = nn.Conv2d(inner_nc, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias)
             down = [downrelu, downconv]
             up = [uprelu, upsample, upconv, upnorm]
-            model = down + up
+            model = down + up # Directly combine down and up layers as there is no submodule
         else:
             upsample = nn.Upsample(scale_factor=2, mode='bilinear')
             upconv = nn.Conv2d(inner_nc * 2, outer_nc, kernel_size=3, stride=1, padding=1, bias=use_bias)
@@ -78,17 +53,50 @@ class UnetSkipConnectionBlock(nn.Module):
             up = [uprelu, upsample, upconv, upnorm]
 
             if use_dropout:
-                model = down + [submodule] + up + [nn.Dropout(0.5)]
+                model = down + [submodule] + up + [nn.Dropout(0.5)] # Add dropout if specified
             else:
                 model = down + [submodule] + up
 
         self.model = nn.Sequential(*model)
-
+                     
+    #Forward input data into the model and return output
     def forward(self, x):
         if self.outermost:
             return self.model(x)
         else:
-            return torch.cat([x, self.model(x)], 1)
+            return torch.cat([x, self.model(x)], 1) # Skip connection: concatenate input with the output
+
+# Defines the Unet generator.
+# |num_downs|: number of downsamplings in UNet. For example,
+# if |num_downs| == 7, image of size 128x128 will become of size 1x1
+# at the bottleneck
+class UnetGenerator(nn.Module):
+    def __init__(self, in_channels, output_nc, num_downs, ngf=64,
+                 norm_layer=nn.BatchNorm2d, use_dropout=False):
+        super(UnetGenerator, self).__init__()
+        # Initialize the innermost UnetSkipConnectionBlock
+        unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, in_channels=None, submodule=None, norm_layer=norm_layer,
+                                             innermost=True)
+         # Add intermediate UnetSkipConnectionBlocks
+        for i in range(num_downs - 5):
+        unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, in_channels=None, submodule=unet_block,
+                                                 norm_layer=norm_layer, use_dropout=use_dropout)
+        # Add more UnetSkipConnectionBlocks with decreasing number of filters
+        unet_block = UnetSkipConnectionBlock(ngf * 4, ngf * 8, in_channels=None, submodule=unet_block,
+                                             norm_layer=norm_layer)
+        unet_block = UnetSkipConnectionBlock(ngf * 2, ngf * 4, in_channels=None, submodule=unet_block,
+                                             norm_layer=norm_layer)
+        unet_block = UnetSkipConnectionBlock(ngf, ngf * 2, in_channels=None, submodule=unet_block,
+                                             norm_layer=norm_layer)
+        # Add the outermost UnetSkipConnectionBlock
+        unet_block = UnetSkipConnectionBlock(output_nc, ngf, in_channels=in_channels, submodule=unet_block,
+                                             outermost=True, norm_layer=norm_layer)
+        # The complete model is now a sequential combination of all the blocks
+        self.model = unet_block
+
+    #Forward the input to model and return output
+    def forward(self, input):
+        return self.model(input)
 
 
 class Vgg19(nn.Module):
@@ -97,11 +105,15 @@ class Vgg19(nn.Module):
         # vgg_pretrained_features = models.vgg19(pretrained=True).features
         vgg_pretrained_features = models.vgg19(weights=models.VGG19_Weights.DEFAULT).features
 
+        # Define slices for different layers of VGG19
         self.slice1 = torch.nn.Sequential()
         self.slice2 = torch.nn.Sequential()
         self.slice3 = torch.nn.Sequential()
         self.slice4 = torch.nn.Sequential()
         self.slice5 = torch.nn.Sequential()
+        
+        # Populate slices with layers from the pretrained VGG19 model
+        # Each slice contains a subset of layers from the VGG19 model
         for x in range(2):
             self.slice1.add_module(str(x), vgg_pretrained_features[x])
         for x in range(2, 7):
@@ -115,7 +127,8 @@ class Vgg19(nn.Module):
         if not requires_grad:
             for param in self.parameters():
                 param.requires_grad = False
-
+                
+     #Forward pass through each slide to extract features and return list of outputs of each slice
     def forward(self, X):
         h_relu1 = self.slice1(X)
         h_relu2 = self.slice2(h_relu1)
