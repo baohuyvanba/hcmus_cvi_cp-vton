@@ -187,17 +187,10 @@ class CPDataLoader(object):
     """
     def __init__(self, opt, dataset):
         super(CPDataLoader, self).__init__()
-
-        if opt.shuffle:
-            train_sampler = DistributedSampler(dataset)
-        else:
-            train_sampler = None
-
         self.dataset = dataset
         self.data_loader = torch.utils.data.DataLoader(
             dataset,
             batch_size=opt.batch_size,     #Define the batch size
-            shuffle=(train_sampler is None),
             num_workers=opt.workers,       #Define the number of worker threads to use for data loading (main thread only)
             pin_memory=True,               #Improve data transfer's speed between CPUs and GPUs
             sampler=DistributedSampler(dataset)
