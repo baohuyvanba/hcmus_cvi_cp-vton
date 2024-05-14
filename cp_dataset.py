@@ -200,7 +200,7 @@ class CPDataLoader(object):
             shuffle=(train_sampler is None),
             num_workers=opt.workers,       #Define the number of worker threads to use for data loading (main thread only)
             pin_memory=True,               #Improve data transfer's speed between CPUs and GPUs
-            sampler=train_sampler
+            sampler=DistributedSampler(dataset)
         )
         self.data_iter = self.data_loader.__iter__()
 
