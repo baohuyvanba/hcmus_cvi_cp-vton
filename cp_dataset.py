@@ -64,7 +64,7 @@ class CPDataset(data.Dataset):
             clothmask = Image.open(os.path.join(self.data_path, 'cloth-mask', cth_name))
         else: #self.stage == 'TOM'
             cloth = Image.open(os.path.join(self.data_path, 'warped-cloth', cth_name))
-            clothmask = Image.open(os.path.join(self.data_path, 'warped-cloth-mask', cth_name))
+            clothmask = Image.open(os.path.join(self.data_path, 'warped-mask', cth_name))
 
         #CLOTH: read
         #cloth = Image.open(os.path.join(self.data_path, 'cloth', cth_name))

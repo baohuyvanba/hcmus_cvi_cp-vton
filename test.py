@@ -55,8 +55,8 @@ def test_gmm(opt, test_loader, model, board, device_id):
     save_dir = "data/test/"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    warp_cloth_dir = os.path.join(save_dir, 'warp-cloth')
-    warp_mask_dir = os.path.join(save_dir, 'warp-mask')
+    warp_cloth_dir = os.path.join(save_dir, 'warped-cloth')
+    warp_mask_dir = os.path.join(save_dir, 'warped-mask')
 
     if not os.path.exists(warp_cloth_dir):
         os.makedirs(warp_cloth_dir)
