@@ -79,7 +79,7 @@ class UnetGenerator(nn.Module):
                                              innermost=True)
          # Add intermediate UnetSkipConnectionBlocks
         for i in range(num_downs - 5):
-        unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, in_channels=None, submodule=unet_block,
+            unet_block = UnetSkipConnectionBlock(ngf * 8, ngf * 8, in_channels=None, submodule=unet_block,
                                                  norm_layer=norm_layer, use_dropout=use_dropout)
         # Add more UnetSkipConnectionBlocks with decreasing number of filters
         unet_block = UnetSkipConnectionBlock(ngf * 4, ngf * 8, in_channels=None, submodule=unet_block,
