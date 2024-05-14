@@ -1,42 +1,56 @@
 # Toward Characteristic-Preserving Image-based Virtual Try-on Network
 
 ## Dataset:
-Ta lấy dataset VITON theo link [GoogleDrive](https://drive.google.com/open?id=1MxCUvKxejnwWnoZ-KoCyMCXo3TLhRuTo).
-
-
+Mô hình sử dụng bộ dataset VITON-resize được sửa đổi từ bộ dữ liệu VITON để phù hợp với thiết kế mô hình. Dữ liệu có thể tải về theo link [GoogleDrive](https://drive.google.com/open?id=1MxCUvKxejnwWnoZ-KoCyMCXo3TLhRuTo).
 ## GMM (Geometric Matching Module)
-### Train (huấn luyện)
-Ta có thể chạy lệnh train như sau. Ngoài ra có các tham số khác có thể tinh chỉnh cho phù hợp. 
+### Train (quá trình huấn luyện)
+Để thực hiện quá trình train của môđun GMM (yêu cầu thiết bị train phải hỗ trợ GPU), ta tiến hành chạy file `run_train_gmm.sh` sau:
+``` shell
+torchrun \
+  --standalone \
+  --nnodes=1 \
+  --nproc_per_node=1 \
+  --rdzv_id=100 \
+  --rdzv_backend=c10d \
+  --rdzv_endpoint=localhost:29400 \
+  train.py \
+    --dataroot='/kaggle/input/vton-cp-resized/viton_resize' \
+    --name='GMM' --stage='GMM' --workers=1 --checkpoint_dir='/kaggle/working/' \
+    --save_count=10000 --keep_step=50000 --decay_step=50000
 ```
-python train.py --name gmm_train_new --stage GMM --workers 4 --save_count 5000 --shuffle
-```
+Trong đó, ta có thể tùy theo cấu hình máy mà thay đổ các tham số `--nnodes=1` số lượng các thiết bị training, `--npro_per_node=1` số lượng các nhân GPU trên thiết bị và khi đó phải thực hiện thay đổi tham số`--workers=1`.
 
-### Eval (đánh giá)
-Chuyển data sang chế độ test. Một ví dụ cho lệnh test:
-```
-python test.py --name gmm_traintest_new --stage GMM --workers 4 --datamode test --data_list test_pairs.txt --checkpoint checkpoints/gmm_train_new/gmm_final.pth
+### Evaluation (đánh giá)
+Để thực hiện kiểm thử trên tập dữ liệu, ta chạy file `run_test_gmm.sh`
+``` shell
+torchrun \
+  --standalone \
+  --nnodes=1 \
+  --nproc_per_node=1 \
+  --rdzv_id=100 \
+  --rdzv_backend=c10d \
+  --rdzv_endpoint=localhost:29400 \
+  test.py \
+    --dataroot='/kaggle/input/vton-cp-resized/viton_resize' \
+    --name='GMM' --stage='GMM' --workers=1 --checkpoint='/kaggle/input/gmm/pytorch/gmmfinal100k/1/gmm_final.pth' \
+    --data_list='/kaggle/input/vton-cp-resized/viton_resize/test_pairs.txt' --datamode='test'
 ```
 
 ## Try-on Module (TOM)
-### Train
-Trước khi thực hiện train Try-on Module, ta sẽ tạo thư mục warped-mask và warped-cloth là kết quả của hàm train GMM trước đó. Các kết quả warped-mask và warped-cloth sẽ là đầu vào cho mô hình TOM. Một ví dụ cho lệnh train TOM (đổi "--stage" sang "TOM"):
+### Train (quá trình huấn luyện)
+Trước khi thực hiện train Try-on Module, ta sẽ cần sử dụng môđun GMM để tạo ra dữ liệu tạo thư mục `warped-mask` và `warped-cloth`. Các kết quả `warped-mask` và `warped-cloth` sẽ là đầu vào cho mô hình TOM.
+Ta thực thi file `train_train_tom.sh` 
 
-```
-python train.py --name tom_train_new --stage TOM --workers 4 --save_count 5000 --shuffle 
-```
-### Eval
-Tương tự như bước train, ta cũng cần tạo warped-cloth và warped-mask tương ứng với tập dữ liệu test. Ví dụ cho lệnh chạy test:
-```
-python test.py --name tom_test_new --stage TOM --workers 4 --datamode test --data_list test_pairs.txt --checkpoint checkpoints/tom_train_new/tom_final.pth
-```
+### Evaluation (đánh giá)
+Để thực hiện kiểm thử trên tập dữ liệu, ta chạy file `run_test_gmm.sh`
 
-## Citation
-If this code helps your research, please cite our paper:
+## References
+Mô hình trên được cài đặt dựa trên bài viết:
 
-	@inproceedings{wang2018toward,
-		title={Toward Characteristic-Preserving Image-based Virtual Try-On Network},
-		author={Wang, Bochao and Zheng, Huabin and Liang, Xiaodan and Chen, Yimin and Lin, Liang},
-		booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
-		pages={589--604},
-		year={2018}
-	}
+@inproceedings{wang2018toward,
+	title={Toward Characteristic-Preserving Image-based Virtual Try-On Network},
+	author={Wang, Bochao and Zheng, Huabin and Liang, Xiaodan and Chen, Yimin and Lin, Liang},
+	booktitle={Proceedings of the European Conference on Computer Vision (ECCV)},
+	pages={589--604},
+	year={2018}
+}
