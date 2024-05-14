@@ -24,7 +24,7 @@ Trước khi thực hiện train Try-on Module, ta sẽ tạo thư mục warped-
 ```
 python train.py --name tom_train_new --stage TOM --workers 4 --save_count 5000 --shuffle 
 ```
-### EVal
+### Eval
 Tương tự như bước train, ta cũng cần tạo warped-cloth và warped-mask tương ứng với tập dữ liệu test. Ví dụ cho lệnh chạy test:
 ```
 python test.py --name tom_test_new --stage TOM --workers 4 --datamode test --data_list test_pairs.txt --checkpoint checkpoints/tom_train_new/tom_final.pth
