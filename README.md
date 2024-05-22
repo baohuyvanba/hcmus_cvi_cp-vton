@@ -81,6 +81,7 @@ Tại input folder sẽ bao gồm các thư mục tập tin sau:
 - cloth
 - cloth-mask
 - test_pairs.txt
+
 Mô hình được huấn luyện trên bộ dữ liệu `train` với `100.000 epochs`
 ## References
 Mô hình trên được cài đặt dựa trên bài viết:
